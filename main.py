@@ -93,8 +93,10 @@ def get_claude_response(user_number, user_message):
         json=data
     )
     
-    result = response.json()
-    reply = result["content"][0]["text"]
+   result = response.json()
+if "error" in result:
+    return f"Error: {result['error']['message']}"
+reply = result["content"][0]["text"]
     
     conversation_history[user_number].append({
         "role": "assistant",
