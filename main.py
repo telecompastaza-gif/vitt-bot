@@ -17,7 +17,7 @@ SYSTEM_PROMPT = """Eres el asistente virtual de VITT, empresa de soluciones tecn
 
 PLANES DE INTERNET (Fibra Óptica):
 - BÁSICO: 100 Mbps - $15/mes - Solo internet
-- INTERMEDIO: 200 Mbps - $20/mes - Solo internet  
+- INTERMEDIO: 200 Mbps - $20/mes - Solo internet
 - AVANZADO: 400 Mbps - $25/mes - Internet + Vitt TV
 - PREMIUM: 500 Mbps - $30/mes - Internet + Vitt TV
 - ÉLITE: 700 Mbps - $35/mes - Internet + Vitt TV + Vitt Cam
@@ -65,16 +65,16 @@ def send_whatsapp_message(to, message):
 def get_claude_response(user_number, user_message):
     if user_number not in conversation_history:
         conversation_history[user_number] = []
-    
+
     conversation_history[user_number].append({
         "role": "user",
         "content": user_message
     })
-    
+
     # Mantener solo últimos 10 mensajes
     if len(conversation_history[user_number]) > 10:
         conversation_history[user_number] = conversation_history[user_number][-10:]
-    
+
     headers = {
         "Content-Type": "application/json",
         "x-api-key": ANTHROPIC_API_KEY,
@@ -86,23 +86,23 @@ def get_claude_response(user_number, user_message):
         "system": SYSTEM_PROMPT,
         "messages": conversation_history[user_number]
     }
-    
+
     response = requests.post(
         "https://api.anthropic.com/v1/messages",
         headers=headers,
         json=data
     )
-    
-   result = response.json()
-if "error" in result:
-    return f"Error: {result['error']['message']}"
-reply = result["content"][0]["text"]
-    
+
+    result = response.json()
+    if "error" in result:
+        return f"Error: {result['error']['message']}"
+    reply = result["content"][0]["text"]
+
     conversation_history[user_number].append({
         "role": "assistant",
         "content": reply
     })
-    
+
     return reply
 
 @app.route("/webhook", methods=["GET"])
@@ -110,7 +110,7 @@ def verify_webhook():
     mode = request.args.get("hub.mode")
     token = request.args.get("hub.verify_token")
     challenge = request.args.get("hub.challenge")
-    
+
     if mode == "subscribe" and token == WEBHOOK_VERIFY_TOKEN:
         return challenge, 200
     return "Forbidden", 403
@@ -118,23 +118,23 @@ def verify_webhook():
 @app.route("/webhook", methods=["POST"])
 def webhook():
     data = request.get_json()
-    
+
     try:
         entry = data["entry"][0]
         changes = entry["changes"][0]
         value = changes["value"]
-        
+
         if "messages" in value:
             message = value["messages"][0]
             from_number = message["from"]
-            
+
             if message["type"] == "text":
                 user_message = message["text"]["body"]
                 reply = get_claude_response(from_number, user_message)
                 send_whatsapp_message(from_number, reply)
     except Exception as e:
         print(f"Error: {e}")
-    
+
     return jsonify({"status": "ok"}), 200
 
 @app.route("/", methods=["GET"])
